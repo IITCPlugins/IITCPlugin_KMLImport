@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "@tmcw/togeojson": "^4.5.0",
+    "iitcpluginkit": "file:../iitcpluginkit"
+  },
+  "license": "Unlicense",
+  "scripts": {
+    "build": "yarn build:dev",
+    "build:dev": "yarn ipk build:dev",
+    "build:prod": "yarn ipk build:prod",
+    "start": "yarn ipk fileserver",
+    "autobuild": "yarn ipk autobuild"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
+    "@typescript-eslint/parser": "^4.33.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-prefer-arrow": "^1.2.3",
+    "eslint-plugin-unicorn": "^36.0.0"
+  }
+}
