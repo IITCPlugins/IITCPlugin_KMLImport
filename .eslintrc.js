@@ -113,7 +113,7 @@ module.exports = {
         "unicorn/filename-case": ["error",
             {
                 "case": "pascalCase",
-                "ignore": ["^index\\.ts$", "^API.*", "\\.schema(\\.ts)?"]
+                "ignore": [".*\\.d\\.ts$", "^index(\\.d)?\\.ts$", "^API.*", "\\.schema(\\.ts)?", "\\.spec\\.ts$"]
             }],
         "unicorn/prefer-ternary": "off",
         "unicorn/no-lonely-if": "off",

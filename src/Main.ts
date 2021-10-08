@@ -10,6 +10,37 @@ const enum FILEType {
     unknown
 }
 
+type DTEntiy = DTEntityPolyline | DTEntityPolygon | DTEntityCircle | DTEntityMarker;
+
+interface DTEntityPolyline {
+    type: "polyline";
+    latLngs: L.LatLng[];
+    color?: string;
+}
+
+interface DTEntityPolygon {
+    type: "polygon";
+    latLngs: L.LatLng[];
+    color?: string;
+}
+
+interface DTEntityCircle {
+    type: "circle";
+    latLng: L.LatLng;
+    radius: numberM
+    color?: string;
+}
+
+interface DTEntityMarker {
+    type: "circle";
+    latLng: L.LatLng;
+    color?: string;
+}
+
+
+
+
+
 class KMLImport implements Plugin.Class {
 
     private DTmanualOpt: () => void;
@@ -69,30 +100,25 @@ class KMLImport implements Plugin.Class {
 
 
     importGeoJSON(geo: any): void {
-        console.log("convert", geo);
+        // console.log("convert", geo);
+
+        const DTitems: DTEntiy[] = [];
+
+        if (geo.features) {
+            geo.features.forEach(feature => this.createPoly(feature, DTitems));
+        } else {
+            this.createPoly(geo.features, DTitems);
+        }
 
         const DTLayer = window.plugin.drawTools.drawnItems as L.FeatureGroup<any>;
-
         if (!window.plugin.drawTools.merge.status) {
             DTLayer.clearLayers();
         }
-
-        if (geo.features) {
-            geo.features.forEach(feature => {
-                const layer = this.createPoly(feature);
-                if (layer) {
-                    DTLayer.addLayer(layer);
-                }
-            })
-        } else {
-            const layer = this.createPoly(geo.features);
-            if (layer) {
-                DTLayer.addLayer(layer);
-            }
-        }
+        window.plugin.drawTools.import(DTitems);
+        window.plugin.drawTools.save();
     }
 
-    createPoly(feature: any): L.ILayer | undefined {
+    createPoly(feature: any, items: DTEntiy[]): void {
         if (feature.type !== "Feature") {
             console.log("skipping data-block", feature.type);
             return;
@@ -104,7 +130,7 @@ class KMLImport implements Plugin.Class {
         }
 
         if (feature.geometry.type === "LineString") {
-            const latLngs = feature.geometry.coordinates.map(point => {
+            const latLngs: L.latLng[] = feature.geometry.coordinates.map(point => {
                 return L.latLng(point[1], point[0]);
             })
 
@@ -113,32 +139,33 @@ class KMLImport implements Plugin.Class {
                 return;
             }
 
-            return L.geodesicPolyline(latLngs, window.plugin.drawTools.lineOptions);
+            items.push({ type: "polyline", latLngs });
         }
 
 
         if (feature.geometry.type === "Polygon") {
 
-            const latLngs = feature.geometry.coordinates[0].map(point => {
+            const latLngs: L.latLng[] = feature.geometry.coordinates[0].map(point => {
                 return L.latLng(point[1], point[0]);
             })
 
-            return L.geodesicPolygon(latLngs, window.plugin.drawTools.polygonOptions);
+            items.push({ type: "polygon", latLngs });
         }
 
         if (feature.geometry.type === "MultiPolygon") {
             // TODO: multipolygon
-            const latLngs = feature.geometry.coordinates[0][0].map(point => {
+            const latLngs: L.latLng[] = feature.geometry.coordinates[0][0].map(point => {
                 return L.latLng(point[1], point[0]);
             })
 
-            return L.geodesicPolygon(latLngs, window.plugin.drawTools.polygonOptions);
+            items.push({ type: "polygon", latLngs });
         }
     }
 
     importDrawTools(text: string): void {
         const data = JSON.parse(text);
         window.plugin.drawTools.import(data);
+        window.plugin.drawTools.save();
     }
 
     getFileType(content: string): FILEType {
