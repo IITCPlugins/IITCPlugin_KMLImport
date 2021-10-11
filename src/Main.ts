@@ -23,7 +23,7 @@ class KMLImport implements Plugin.Class {
         console.log("KMLImport " + VERSION);
 
         // eslint-disable-next-line unicorn/prefer-module
-        require("./styles.css");
+        /* require("./styles.css"); */
 
         this.monkeyPatchDrawTools();
     }
