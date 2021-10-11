@@ -127,6 +127,7 @@ module.exports = {
         "unicorn/prefer-node-append": "off",
         "unicorn/prefer-node-remove": "off",
         "unicorn/prefer-spread": "off",
+        "unicorn/numeric-separators-style": "off",
         "unicorn/prevent-abbreviations": ["error",
             {
                 "replacements": {

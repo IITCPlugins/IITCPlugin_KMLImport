@@ -1,44 +1,18 @@
 import * as Plugin from "iitcpluginkit";
 import * as togeojson from "@tmcw/togeojson";
+import * as GeoJSON from "geojson";
+import { Optimize } from "./Optimize";
+import { DTEntiy, PluginDrawTools } from "./DrawTools";
+
 
 const enum FILEType {
     KML,
     GPX,
     TCX,
-    GeoJSON,
+    FTGeoJSON,
     DrawTools,
     unknown
 }
-
-type DTEntiy = DTEntityPolyline | DTEntityPolygon | DTEntityCircle | DTEntityMarker;
-
-interface DTEntityPolyline {
-    type: "polyline";
-    latLngs: L.LatLng[];
-    color?: string;
-}
-
-interface DTEntityPolygon {
-    type: "polygon";
-    latLngs: L.LatLng[];
-    color?: string;
-}
-
-interface DTEntityCircle {
-    type: "circle";
-    latLng: L.LatLng;
-    radius: numberM
-    color?: string;
-}
-
-interface DTEntityMarker {
-    type: "circle";
-    latLng: L.LatLng;
-    color?: string;
-}
-
-
-
 
 
 class KMLImport implements Plugin.Class {
@@ -48,6 +22,7 @@ class KMLImport implements Plugin.Class {
     init() {
         console.log("KMLImport " + VERSION);
 
+        // eslint-disable-next-line unicorn/prefer-module
         require("./styles.css");
 
         this.monkeyPatchDrawTools();
@@ -67,11 +42,29 @@ class KMLImport implements Plugin.Class {
     manualOpt() {
         this.DTmanualOpt();
 
-        $(".drawtoolsSetbox a:eq(3)").after(
+        const newButton = $("<a>", {
+            click: (event: MouseEvent) => {
+                void this.import();
+                $(event.target!).blur();
+            },
+
+            tabindex: "0",
+            text: "Import",
+            title: "Import DrawTools/KML/GPX/Geojson/"
+        })
+
+        const importButton = $(".drawtoolsSetbox a:contains(Import Drawn Items)");
+        if (importButton.length === 1) {
+            importButton.replaceWith(newButton)
+        } else {
+            $(".drawtoolsSetbox a:eq(3)").after(newButton);
+        }
+
+        $(".drawtoolsSetbox a:last").before(
             $("<a>", {
-                click: () => this.import(),
+                click: () => this.optimize(),
                 tabindex: "0",
-                text: "Import KML/GPX/Geojson"
+                text: "Optimize"
             })
         );
     }
@@ -80,27 +73,44 @@ class KMLImport implements Plugin.Class {
         const files = await this.fileChooser();
         const text = await this.readFile(files[0]);
 
-        const content = (new window.DOMParser()).parseFromString(text, "text/xml");
-
-        let converted: any;
+        let content;
+        let converted;
+        let DTitems;
         switch (this.getFileType(text)) {
-            case FILEType.GPX: converted = togeojson.gpx(content); break;
-            case FILEType.KML: converted = togeojson.kml(content); break;
-            case FILEType.GeoJSON: converted = JSON.parse(text); break;
+            case FILEType.GPX:
+                content = (new window.DOMParser()).parseFromString(text, "text/xml");
+                converted = togeojson.gpx(content);
+                DTitems = this.convertGeoJSON(converted);
+                this.importIntoDrawTools(DTitems);
+                break;
+            case FILEType.KML:
+                content = (new window.DOMParser()).parseFromString(text, "text/xml");
+                converted = togeojson.kml(content);
+                DTitems = this.convertGeoJSON(converted);
+                this.importIntoDrawTools(DTitems);
+                break;
+            case FILEType.TCX:
+                content = (new window.DOMParser()).parseFromString(text, "text/xml");
+                converted = togeojson.tcx(content);
+                DTitems = this.convertGeoJSON(converted);
+                this.importIntoDrawTools(DTitems);
+                break;
+            case FILEType.FTGeoJSON:
+                converted = JSON.parse(text) as GeoJSON.FeatureCollection;
+                DTitems = this.convertGeoJSON(converted);
+                this.importIntoDrawTools(DTitems);
+                break;
             case FILEType.DrawTools:
-                this.importDrawTools(text);
-                return;
+                const data = JSON.parse(text) as DTEntiy[];
+                this.importIntoDrawTools(data);
+                break;
             default:
                 alert("unrecognized file type");
-                return;
         }
-
-        this.importGeoJSON(converted);
     }
 
 
-    importGeoJSON(geo: any): void {
-        // console.log("convert", geo);
+    convertGeoJSON(geo: GeoJSON.FeatureCollection): DTEntiy[] {
 
         const DTitems: DTEntiy[] = [];
 
@@ -114,11 +124,11 @@ class KMLImport implements Plugin.Class {
         if (!window.plugin.drawTools.merge.status) {
             DTLayer.clearLayers();
         }
-        window.plugin.drawTools.import(DTitems);
-        window.plugin.drawTools.save();
+
+        return DTitems;
     }
 
-    createPoly(feature: any, items: DTEntiy[]): void {
+    createPoly(feature: GeoJSON.Feature, items: DTEntiy[]): void {
         if (feature.type !== "Feature") {
             console.log("skipping data-block", feature.type);
             return;
@@ -130,7 +140,7 @@ class KMLImport implements Plugin.Class {
         }
 
         if (feature.geometry.type === "LineString") {
-            const latLngs: L.latLng[] = feature.geometry.coordinates.map(point => {
+            const latLngs: L.LatLng[] = feature.geometry.coordinates.map(point => {
                 return L.latLng(point[1], point[0]);
             })
 
@@ -145,7 +155,7 @@ class KMLImport implements Plugin.Class {
 
         if (feature.geometry.type === "Polygon") {
 
-            const latLngs: L.latLng[] = feature.geometry.coordinates[0].map(point => {
+            const latLngs: L.LatLng[] = feature.geometry.coordinates[0].map(point => {
                 return L.latLng(point[1], point[0]);
             })
 
@@ -154,7 +164,7 @@ class KMLImport implements Plugin.Class {
 
         if (feature.geometry.type === "MultiPolygon") {
             // TODO: multipolygon
-            const latLngs: L.latLng[] = feature.geometry.coordinates[0][0].map(point => {
+            const latLngs: L.LatLng[] = feature.geometry.coordinates[0][0].map(point => {
                 return L.latLng(point[1], point[0]);
             })
 
@@ -162,16 +172,26 @@ class KMLImport implements Plugin.Class {
         }
     }
 
-    importDrawTools(text: string): void {
-        const data = JSON.parse(text);
-        window.plugin.drawTools.import(data);
-        window.plugin.drawTools.save();
+    importIntoDrawTools(data: DTEntiy[]): void {
+        const drawTools = window.plugin.drawTools as PluginDrawTools;
+        if (!drawTools.merge || !drawTools.merge.status) {
+            drawTools.drawnItems.clearLayers();
+        }
+        try {
+            drawTools.import(data);
+        } catch {
+            drawTools.optAlert('<span style="color: #f88">Import failed</span>');
+        }
+        drawTools.save();
     }
 
     getFileType(content: string): FILEType {
-        if (content.includes("<gpx ")) return FILEType.GPX;
-        if (content.includes("<kml ")) return FILEType.KML;
-        if (content.includes('"type":"FeatureCollection"')) return FILEType.GeoJSON;
+        if (content.includes("<gpx")) return FILEType.GPX;
+        if (content.includes("<kml")) return FILEType.KML;
+        if (content.includes("<TrainingCenterDatabase")) return FILEType.TCX;
+        if (content.includes('"type":"FeatureCollection"')) return FILEType.FTGeoJSON;
+        if (content.includes('"type":"polygon"') || content.includes('"type":"circle"')
+            || content.includes('"type":"polyline"') || content.includes('"type":"marker"')) return FILEType.DrawTools;
 
         return FILEType.unknown;
     }
@@ -181,7 +201,7 @@ class KMLImport implements Plugin.Class {
         return new Promise((resolve, reject) => {
             const fileInput = L.DomUtil.create("input", "hidden") as HTMLInputElement;
             fileInput.type = "file";
-            fileInput.accept = ".gpx,.kml,.json,.geojson";
+            fileInput.accept = ".gpx,.tcx,.kml,.json,.geojson";
             fileInput.style.display = "none";
             fileInput.addEventListener("change", () => {
                 if (fileInput.files !== null) {
@@ -210,6 +230,9 @@ class KMLImport implements Plugin.Class {
         });
     }
 
+    optimize = (): void => {
+        new Optimize().show();
+    }
 
 }
 
