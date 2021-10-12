@@ -44,9 +44,9 @@ export class Optimize {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         window.plugin.drawTools.drawnItems.eachLayer((layer: L.ILayer) => {
             if (layer instanceof L.GeodesicPolygon || layer instanceof L.Polygon) {
-                this.polygons.push(new Polygon(layer as L.Polygon));
+                this.polygons.push(new Polygon(layer as L.Polygon, true));
             } else if (layer instanceof L.GeodesicPolyline || layer instanceof L.Polyline) {
-                this.polygons.push(new Polygon(layer as L.Polygon));
+                this.polygons.push(new Polygon(layer as L.Polygon, false));
             }
         });
 
