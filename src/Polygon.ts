@@ -54,7 +54,7 @@ export class Polygon {
             const right = this.douglasStep(points.slice(split), tolerance);
             return [...left.slice(0, -1), ...right];
         } else {
-            return [points[0], points[1]];
+            return [points[0], points[points.length - 1]];
         }
     }
 
