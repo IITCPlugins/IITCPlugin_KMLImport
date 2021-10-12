@@ -2,7 +2,7 @@
   "dependencies": {
     "@tmcw/togeojson": "^4.5.0",
     "@types/geojson": "^7946.0.8",
-    "iitcpluginkit": "file:../iitcpluginkit"
+    "iitcpluginkit": "^1.4.0"
   },
   "license": "Unlicense",
   "scripts": {
