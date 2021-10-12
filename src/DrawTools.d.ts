@@ -29,6 +29,7 @@ interface DTEntityMarker {
 export interface PluginDrawTools {
     drawnItems: L.FeatureGroup<any>;
     import: (DTitems: DTEntiy[]) => void;
+    load: () => void;
     save: () => void;
     manualOpt: () => void;
     optAlert: (text: string) => void;

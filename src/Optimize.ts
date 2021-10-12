@@ -1,4 +1,5 @@
 import { Polygon } from "./Polygon";
+import { PluginDrawTools } from "./DrawTools";
 
 export class Optimize {
 
@@ -12,7 +13,7 @@ export class Optimize {
         const html = $("<div>").append(
             $("<div>", { id: "polystats" }),
             $("<div>", { id: "polyslide" }).append(
-                $("<input>", { type: "range", min: "0", max: "100", value: "0", id: "tolerance" })
+                $("<input>", { type: "range", min: "0", max: "1000", value: "0", id: "tolerance", width: "100%" })
                     .on("input", () => this.optimize())
             ));
 
@@ -23,8 +24,9 @@ export class Optimize {
                 "OK": () => this.close()
             },
             closeCallback: () => {
-                window.plugin.drawTools.drawnItems.clearLayers();
-                window.plugin.drawTools.load();
+                const drawTools = window.plugin.drawTools as PluginDrawTools;
+                drawTools.drawnItems.clearLayers();
+                drawTools.load();
             }
         })
 
@@ -65,7 +67,7 @@ export class Optimize {
         const tolerance = parseInt($("#tolerance", this.dialog).val() as string);
 
         this.polygons.forEach(p => {
-            p.optimize(tolerance * 1e-5);
+            p.optimize(tolerance * 1e-6);
             p.update();
         })
 
