@@ -144,38 +144,78 @@ class KMLImport implements Plugin.Class {
             return;
         }
 
-        if (feature.geometry.type === "LineString") {
-            const latLngs: L.LatLng[] = feature.geometry.coordinates.map(point => {
-                return L.latLng(point[1], point[0]);
-            })
+        let latLng: L.LatLng;
+        let latLngs: L.LatLng[];
+        switch (feature.geometry.type) {
+            case "Point":
+                latLng = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]);
+                items.push({ type: "marker", latLng });
+                break;
 
-            if (latLngs.length === 0) {
-                console.log("LineString without coordinates", feature);
-                return;
-            }
+            case "MultiPoint":
+                feature.geometry.coordinates.forEach(point => {
+                    latLng = L.latLng(point[1], point[0]);
+                    items.push({ type: "marker", latLng });
+                })
+                break;
 
-            items.push({ type: "polyline", latLngs });
-        }
+            case "LineString":
+                latLngs = feature.geometry.coordinates.map(point => {
+                    return L.latLng(point[1], point[0]);
+                })
 
+                if (latLngs.length === 0) {
+                    console.error("LineString without coordinates", feature);
+                    return;
+                }
 
-        if (feature.geometry.type === "Polygon") {
+                items.push({ type: "polyline", latLngs });
+                break;
 
-            const latLngs: L.LatLng[] = feature.geometry.coordinates[0].map(point => {
-                return L.latLng(point[1], point[0]);
-            })
+            case "MultiLineString":
+                feature.geometry.coordinates.forEach(line => {
+                    latLngs = line.map(point => {
+                        return L.latLng(point[1], point[0]);
+                    })
 
-            items.push({ type: "polygon", latLngs });
-        }
+                    if (latLngs.length > 1) {
+                        items.push({ type: "polyline", latLngs });
+                    }
 
-        if (feature.geometry.type === "MultiPolygon") {
-            // TODO: multipolygon
-            const latLngs: L.LatLng[] = feature.geometry.coordinates[0][0].map(point => {
-                return L.latLng(point[1], point[0]);
-            })
+                })
+                break;
 
-            items.push({ type: "polygon", latLngs });
+            case "Polygon":
+                feature.geometry.coordinates.forEach(poly => {
+                    latLngs = poly.map(point => {
+                        return L.latLng(point[1], point[0]);
+                    })
+
+                    if (latLngs.length > 1) {
+                        items.push({ type: "polygon", latLngs });
+                    }
+                })
+                break;
+
+            case "MultiPolygon":
+                feature.geometry.coordinates.forEach(multipoly => {
+                    multipoly.forEach(poly => {
+                        latLngs = poly.map(point => {
+                            return L.latLng(point[1], point[0]);
+                        })
+
+                        if (latLngs.length > 1) {
+                            items.push({ type: "polygon", latLngs });
+                        }
+                    })
+                })
+                break;
+
+            default:
+                console.error("unrecognized geometry type")
         }
     }
+
 
     importIntoDrawTools(data: DTEntiy[]): void {
         const drawTools = window.plugin.drawTools as PluginDrawTools;
