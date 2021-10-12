@@ -5,15 +5,6 @@ import { Optimize } from "./Optimize";
 import { DTEntiy, PluginDrawTools } from "./DrawTools";
 
 
-const enum FILEType {
-    KML,
-    GPX,
-    TCX,
-    FTGeoJSON,
-    DrawTools,
-    unknown
-}
-
 
 class KMLImport implements Plugin.Class {
 
@@ -70,40 +61,57 @@ class KMLImport implements Plugin.Class {
         const files = await this.fileChooser();
         const text = await this.readFile(files[0]);
 
-        let content;
-        let converted;
-        let DTitems;
-        switch (this.getFileType(text)) {
-            case FILEType.GPX:
-                content = (new window.DOMParser()).parseFromString(text, "text/xml");
-                converted = togeojson.gpx(content);
-                DTitems = this.convertGeoJSON(converted);
-                this.importIntoDrawTools(DTitems);
-                break;
-            case FILEType.KML:
-                content = (new window.DOMParser()).parseFromString(text, "text/xml");
-                converted = togeojson.kml(content);
-                DTitems = this.convertGeoJSON(converted);
-                this.importIntoDrawTools(DTitems);
-                break;
-            case FILEType.TCX:
-                content = (new window.DOMParser()).parseFromString(text, "text/xml");
-                converted = togeojson.tcx(content);
-                DTitems = this.convertGeoJSON(converted);
-                this.importIntoDrawTools(DTitems);
-                break;
-            case FILEType.FTGeoJSON:
-                converted = JSON.parse(text) as GeoJSON.FeatureCollection;
-                DTitems = this.convertGeoJSON(converted);
-                this.importIntoDrawTools(DTitems);
-                break;
-            case FILEType.DrawTools:
-                const data = JSON.parse(text) as DTEntiy[];
-                this.importIntoDrawTools(data);
-                break;
-            default:
-                alert("unrecognized file type");
+        const DTitems = this.convert2DrawTools(text);
+        if (!DTitems) return;
+        this.importIntoDrawTools(DTitems);
+    }
+
+    convert2DrawTools(text: string): DTEntiy[] | undefined {
+
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const json = JSON.parse(text);
+
+            // DrawTools
+            if (json[0] && json[0].type && ["polygon", "circle", "polyline", "marker"].includes(json[0].type)) {
+                return json as DTEntiy[];
+            }
+
+            // GeoJSON
+            if (json.type && json.type === "FeatureCollection") {
+                return this.convertGeoJSON(json);
+            }
+        } catch { /* ignore */ }
+
+
+        if (text.search(/^\s*<?xml</)) {
+            try {
+                const content = (new window.DOMParser()).parseFromString(text, "text/xml");
+
+                // KML
+                if (content.getElementsByTagName("kml")) {
+                    const converted = togeojson.kml(content);
+                    return this.convertGeoJSON(converted);
+                }
+
+                // GPX
+                if (content.getElementsByTagName("gpx")) {
+                    const converted = togeojson.gpx(content);
+                    return this.convertGeoJSON(converted);
+                }
+
+                // TCX
+                if (content.getElementsByTagName("TrainingCenterDatabase")) {
+                    const converted = togeojson.tcx(content);
+                    return this.convertGeoJSON(converted);
+                }
+            } catch { /* ignore */ }
         }
+
+
+
+        alert("unrecognized file type");
+        return;
     }
 
 
@@ -180,17 +188,6 @@ class KMLImport implements Plugin.Class {
             drawTools.optAlert('<span style="color: #f88">Import failed</span>');
         }
         drawTools.save();
-    }
-
-    getFileType(content: string): FILEType {
-        if (content.includes("<gpx")) return FILEType.GPX;
-        if (content.includes("<kml")) return FILEType.KML;
-        if (content.includes("<TrainingCenterDatabase")) return FILEType.TCX;
-        if (content.includes('"type":"FeatureCollection"')) return FILEType.FTGeoJSON;
-        if (content.includes('"type":"polygon"') || content.includes('"type":"circle"')
-            || content.includes('"type":"polyline"') || content.includes('"type":"marker"')) return FILEType.DrawTools;
-
-        return FILEType.unknown;
     }
 
 
