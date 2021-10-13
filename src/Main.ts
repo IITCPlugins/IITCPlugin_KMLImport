@@ -45,7 +45,7 @@ class KMLImport implements Plugin.Class {
         if (importButton.length === 1) {
             importButton.replaceWith(newButton)
         } else {
-            $(".drawtoolsSetbox a:eq(3)").after(newButton);
+            $(".drawtoolsSetbox a:eq(1)").after(newButton);
         }
 
         $(".drawtoolsSetbox a:last").before(
@@ -85,30 +85,26 @@ class KMLImport implements Plugin.Class {
 
 
         if (text.search(/^\s*<?xml</)) {
-            try {
-                const content = (new window.DOMParser()).parseFromString(text, "text/xml");
+            const content = (new window.DOMParser()).parseFromString(text, "text/xml");
 
-                // KML
-                if (content.getElementsByTagName("kml")) {
-                    const converted = togeojson.kml(content);
-                    return this.convertGeoJSON(converted);
-                }
+            // KML
+            if (content.getElementsByTagName("kml")) {
+                const converted = togeojson.kml(content);
+                return this.convertGeoJSON(converted);
+            }
 
-                // GPX
-                if (content.getElementsByTagName("gpx")) {
-                    const converted = togeojson.gpx(content);
-                    return this.convertGeoJSON(converted);
-                }
+            // GPX
+            if (content.getElementsByTagName("gpx")) {
+                const converted = togeojson.gpx(content);
+                return this.convertGeoJSON(converted);
+            }
 
-                // TCX
-                if (content.getElementsByTagName("TrainingCenterDatabase")) {
-                    const converted = togeojson.tcx(content);
-                    return this.convertGeoJSON(converted);
-                }
-            } catch { /* ignore */ }
+            // TCX
+            if (content.getElementsByTagName("TrainingCenterDatabase")) {
+                const converted = togeojson.tcx(content);
+                return this.convertGeoJSON(converted);
+            }
         }
-
-
 
         alert("unrecognized file type");
         return;
@@ -126,7 +122,7 @@ class KMLImport implements Plugin.Class {
         }
 
         const DTLayer = window.plugin.drawTools.drawnItems as L.FeatureGroup<any>;
-        if (!window.plugin.drawTools.merge.status) {
+        if (!window.plugin.drawTools.merge || !window.plugin.drawTools.merge.status) {
             DTLayer.clearLayers();
         }
 
