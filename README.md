@@ -8,6 +8,8 @@ Here you can now load KML,GPX,TCX,Geojson or DrawTool files
 - Adds a "Optimize" for reducing the point count  
 Usually imported data is for more detailed as you really need. This will help you to reduce the detail level.
 
+[Example](mcben.github.com/IITCPlugin_KMLImport/example.png)
+
 
 # Build
 - `yarn install`
