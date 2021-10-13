@@ -13,7 +13,7 @@ Usually imported data is for more detailed as you really need. This will help yo
 # Build
 Install (requires IITC)  
 ![iitc_plugin_KMLImport.user.js
-](/raw/main/dist/iitc_plugin_KMLImport.user.js)
+](/dist/iitc_plugin_KMLImport.user.js?raw=true)
 
 
 # Build
