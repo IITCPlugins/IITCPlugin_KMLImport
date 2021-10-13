@@ -2,8 +2,9 @@
   "name": "IITC plugin: KMLImport",
   "id": "iitc_plugin_KMLImport",
   "category": "Draw",
-  "description": "Import KML/GPX/Geojson into DrawTools",
+  "description": "Import KML/GPX/Geojson/TCX into DrawTools",
   "author": "McBen",
   "entry": "src/Main.ts",
-  "minimize": false
+  "minimize": false,
+  "downloadURL": "https://github.com/McBen/IITCPlugin_KMLImport/raw/main/dist/iitc_plugin_KMLImport.user.js"
 }
