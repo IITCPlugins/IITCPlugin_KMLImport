@@ -38,7 +38,7 @@ class KMLImport implements Plugin.Class {
 
             tabindex: "0",
             text: "Import",
-            title: "Import DrawTools/KML/GPX/Geojson/"
+            title: "Import DrawTools/KML/GPX/Geojson/TCX"
         })
 
         const importButton = $(".drawtoolsSetbox a:contains(Import Drawn Items)");
