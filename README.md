@@ -11,6 +11,12 @@ Usually imported data is for more detailed as you really need. This will help yo
 ![Example](/example.png?raw=true)
 
 # Build
+Install (requires IITC)  
+![iitc_plugin_KMLImport.user.js
+](/raw/main/dist/iitc_plugin_KMLImport.user.js)
+
+
+# Build
 - `yarn install`
 - `yarn build`
 (or `yarn build:prod` for release version)
